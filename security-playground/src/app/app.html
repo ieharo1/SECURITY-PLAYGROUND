@@ -1,0 +1,492 @@
+<div class="app-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-icon">🛡️</div>
+        <span class="logo-text">Security Lab</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      @for (item of navItems; track item.id) {
+        <div 
+          class="nav-item" 
+          [class.active]="activeModule() === item.id"
+          (click)="setActiveModule(item.id)">
+          <span class="nav-icon">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </div>
+      }
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Password Analyzer Module -->
+    @if (activeModule() === 'password') {
+      <div class="module-container animate-in">
+        <header class="module-header">
+          <h1 class="module-title">
+            <span class="module-title-icon">🔐</span>
+            Analizador de Contraseñas
+          </h1>
+          <p class="module-description">Analiza la fortaleza de contraseñas con cálculos reales de entropía y estimaciones de tiempo de crack</p>
+        </header>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🔍 Ingresa una Contraseña para Analizar</h3>
+          </div>
+          <div class="input-group">
+            <div class="input-with-toggle">
+              <input 
+                [type]="passwordVisible() ? 'text' : 'password'"
+                class="input-field"
+                placeholder="Ingresa la contraseña a analizar..."
+                [ngModel]="passwordInput()"
+                (ngModelChange)="passwordInput.set($event)">
+              <button class="toggle-password" (click)="togglePasswordVisibility()">
+                {{ passwordVisible() ? '🙈' : '👁️' }}
+              </button>
+            </div>
+          </div>
+
+          @if (passwordAnalysis(); as analysis) {
+            <div class="strength-meter">
+              <div 
+                class="strength-bar" 
+                [class]="getStrengthClass()"
+                [style.width.%]="analysis.score">
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+              <span class="metric-value" [class]="getScoreColor()">{{ analysis.score }}/100</span>
+              <span style="color: var(--text-secondary); font-size: 13px;">
+                @if (analysis.score < 30) { Débil }
+                @else if (analysis.score < 50) { Media }
+                @else if (analysis.score < 75) { Fuerte }
+                @else { Muy Fuerte }
+              </span>
+            </div>
+
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">Longitud</div>
+                <div class="metric-value">{{ analysis.length }} caracteres</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Pool de Caracteres</div>
+                <div class="metric-value">{{ analysis.poolSize }}</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Entropía</div>
+                <div class="metric-value info">{{ analysis.entropy }} bits</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Tiempo CPU</div>
+                <div class="metric-value success">{{ analysis.crackTimeCpu }}</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Tiempo GPU</div>
+                <div class="metric-value warning">{{ analysis.crackTimeGpu }}</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Ataque Distribuido</div>
+                <div class="metric-value danger">{{ analysis.crackTimeDistributed }}</div>
+              </div>
+            </div>
+
+            @if (analysis.vulnerabilities.length > 0) {
+              <div class="result-panel" style="margin-top: 20px;">
+                <div class="result-title">⚠️ Vulnerabilidades Detectadas</div>
+                <ul class="warning-list">
+                  @for (vuln of analysis.vulnerabilities; track vuln) {
+                    <li class="warning-item">{{ vuln }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (analysis.suggestions.length > 0) {
+              <div class="result-panel" style="margin-top: 20px;">
+                <div class="result-title">💡 Sugerencias</div>
+                <ul class="suggestions-list">
+                  @for (suggestion of analysis.suggestions; track suggestion) {
+                    <li class="suggestion-item">{{ suggestion }}</li>
+                  }
+                </ul>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Password Generator -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🎲 Generador de Contraseñas Seguras</h3>
+          </div>
+          <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
+            <div class="input-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+              <label class="input-label">Longitud</label>
+              <input 
+                type="number" 
+                class="input-field"
+                [ngModel]="genOptions().length"
+                (ngModelChange)="genOptions.update(o => ({...o, length: $event}))"
+                min="8"
+                max="64">
+            </div>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input 
+                type="checkbox" 
+                [ngModel]="genOptions().uppercase"
+                (ngModelChange)="genOptions.update(o => ({...o, uppercase: $event}))">
+              A-Z
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input 
+                type="checkbox" 
+                [ngModel]="genOptions().numbers"
+                (ngModelChange)="genOptions.update(o => ({...o, numbers: $event}))">
+              0-9
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input 
+                type="checkbox" 
+                [ngModel]="genOptions().symbols"
+                (ngModelChange)="genOptions.update(o => ({...o, symbols: $event}))">
+              !@#$
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input 
+                type="checkbox" 
+                [ngModel]="genOptions().excludeAmbiguous"
+                (ngModelChange)="genOptions.update(o => ({...o, excludeAmbiguous: $event}))">
+              Sin ambiguos
+            </label>
+          </div>
+          <button class="btn btn-primary" (click)="generatePassword()">Generar Contraseña Segura</button>
+          @if (generatedPassword()) {
+            <div class="result-panel" style="margin-top: 16px; position: relative;">
+              <div class="result-content" style="font-size: 16px;">{{ generatedPassword() }}</div>
+              <button class="copy-btn" (click)="copyToClipboard(generatedPassword())">Copiar</button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Hash Generator Module -->
+    @if (activeModule() === 'hash') {
+      <div class="module-container animate-in">
+        <header class="module-header">
+          <h1 class="module-title">
+            <span class="module-title-icon">#️⃣</span>
+            Generador de Hash
+          </h1>
+          <p class="module-description">Genera hashes SHA-256 y SHA-512 usando Web Crypto API</p>
+        </header>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🔑 Generar Hash</h3>
+            <div style="display: flex; gap: 8px;">
+              <button 
+                class="btn btn-secondary" 
+                [class.btn-primary]="hashAlgorithm() === 'sha256'"
+                (click)="setHashAlgorithm('sha256')">
+                SHA-256
+              </button>
+              <button 
+                class="btn btn-secondary"
+                [class.btn-primary]="hashAlgorithm() === 'sha512'"
+                (click)="setHashAlgorithm('sha512')">
+                SHA-512
+              </button>
+            </div>
+          </div>
+          <div class="input-group">
+            <input 
+              type="text"
+              class="input-field"
+              placeholder="Ingresa el texto para generar hash..."
+              [ngModel]="hashInput()"
+              (ngModelChange)="hashInput.set($event)">
+          </div>
+          @if (hashOutput()) {
+            <div class="result-panel" style="position: relative;">
+              <div class="result-title">Hash Generado ({{ hashAlgorithm() | uppercase }})</div>
+              <div class="result-content">{{ hashOutput() }}</div>
+              <button class="copy-btn" (click)="copyToClipboard(hashOutput())">Copiar</button>
+            </div>
+          }
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">⚖️ Comparar Hashes</h3>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Hash 1</label>
+            <input 
+              type="text"
+              class="input-field"
+              placeholder="Pega el primer hash..."
+              [ngModel]="hashCompare1()"
+              (ngModelChange)="hashCompare1.set($event)">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Hash 2</label>
+            <input 
+              type="text"
+              class="input-field"
+              placeholder="Pega el segundo hash..."
+              [ngModel]="hashCompare2()"
+              (ngModelChange)="hashCompare2.set($event)">
+          </div>
+          @if (hashCompare1() && hashCompare2()) {
+            <div class="result-panel">
+              @if (hashCompare1().toLowerCase() === hashCompare2().toLowerCase()) {
+                <div style="color: var(--accent-primary); display: flex; align-items: center; gap: 8px;">
+                  <span>✓</span> ¡Los hashes coinciden!
+                </div>
+              } @else {
+                <div style="color: var(--accent-danger); display: flex; align-items: center; gap: 8px;">
+                  <span>✗</span> Los hashes NO coinciden
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- JWT Validator Module -->
+    @if (activeModule() === 'jwt') {
+      <div class="module-container animate-in">
+        <header class="module-header">
+          <h1 class="module-title">
+            <span class="module-title-icon">🎫</span>
+            Validador JWT
+          </h1>
+          <p class="module-description">Decodifica y valida JSON Web Tokens (con fines educativos)</p>
+        </header>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🔓 Decodificar Token JWT</h3>
+          </div>
+          <div class="input-group">
+            <textarea 
+              class="input-field"
+              placeholder="Pega tu token JWT aquí..."
+              [ngModel]="jwtInput()"
+              (ngModelChange)="jwtInput.set($event)">
+            </textarea>
+          </div>
+
+          @if (jwtResult(); as result) {
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">Algoritmo</div>
+                <div class="metric-value" [class.warning]="result.algorithm.toLowerCase() === 'none'">
+                  {{ result.algorithm }}
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Expiración</div>
+                <div class="metric-value" [class]="getExpirationStatus().class">
+                  {{ getExpirationStatus().text }}
+                </div>
+              </div>
+              @if (result.expirationTime) {
+                <div class="metric-card" style="grid-column: span 2;">
+                  <div class="metric-label">{{ result.expirationTime }}</div>
+                </div>
+              }
+            </div>
+
+            @if (result.warnings.length > 0) {
+              <div class="result-panel" style="margin-top: 20px;">
+                <div class="result-title">⚠️ Advertencias de Seguridad</div>
+                <ul class="warning-list">
+                  @for (warning of result.warnings; track warning) {
+                    <li class="warning-item">{{ warning }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (result.errors.length > 0) {
+              <div class="result-panel" style="margin-top: 20px;">
+                <div class="result-title">❌ Errores</div>
+                <ul class="warning-list">
+                  @for (error of result.errors; track error) {
+                    <li class="warning-item error">{{ error }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (result.header) {
+              <div class="result-panel" style="margin-top: 20px;">
+                <div class="result-header">
+                  <div class="result-title">📋 Encabezado</div>
+                </div>
+                <pre class="result-content">{{ formatJson(result.header) }}</pre>
+              </div>
+            }
+
+            @if (result.payload) {
+              <div class="result-panel" style="margin-top: 20px;">
+                <div class="result-header">
+                  <div class="result-title">📦 Payload</div>
+                </div>
+                <pre class="result-content">{{ formatJson(result.payload) }}</pre>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Input Security Detector Module -->
+    @if (activeModule() === 'detector') {
+      <div class="module-container animate-in">
+        <header class="module-header">
+          <h1 class="module-title">
+            <span class="module-title-icon">🔍</span>
+            Detector de Seguridad en Inputs
+          </h1>
+          <p class="module-description">Detecta vulnerabilidades comunes de inyección en entradas de usuario (educativo)</p>
+        </header>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🕵️ Probar Input para Vulnerabilidades</h3>
+          </div>
+          <div class="input-group">
+            <textarea 
+              class="input-field"
+              placeholder="Ingresa el input de prueba (patrones de SQL injection, XSS, command injection)..."
+              [ngModel]="detectorInput()"
+              (ngModelChange)="detectorInput.set($event)">
+            </textarea>
+          </div>
+          <p style="color: var(--text-muted); font-size: 12px; margin-top: 8px;">
+            Prueba: <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">' OR 1=1 --</code> o 
+            <code style="background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px;">&lt;script&gt;alert(1)&lt;/script&gt;</code>
+          </p>
+
+          @if (vulnerabilities().length > 0) {
+            <div style="margin-top: 20px;">
+              <h4 style="margin-bottom: 12px; color: var(--accent-danger);">🚨 Vulnerabilidades Detectadas</h4>
+              @for (vuln of vulnerabilities(); track vuln.type) {
+                <div class="vulnerability-item" [class.medium]="vuln.risk === 'Medium'" [class.low]="vuln.risk === 'Low'">
+                  <div class="vuln-header">
+                    <span class="vuln-type">{{ vuln.type }}</span>
+                    <span class="vuln-risk" [class]="vuln.risk.toLowerCase()">{{ vuln.risk }} Riesgo</span>
+                  </div>
+                  <p class="vuln-explanation">{{ vuln.explanation }}</p>
+                  <p class="vuln-remediation">✓ {{ vuln.remediation }}</p>
+                </div>
+              }
+            </div>
+          } @else if (detectorInput() && vulnerabilities().length === 0) {
+            <div class="result-panel" style="margin-top: 20px;">
+              <div style="color: var(--accent-primary); display: flex; align-items: center; gap: 8px;">
+                <span>✓</span> No se detectaron vulnerabilidades comunes
+              </div>
+              <p style="color: var(--text-muted); font-size: 12px; margin-top: 8px;">
+                Nota: Este es un detector básico de patrones. Siempre usa validación de entrada y consultas parametrizadas en producción.
+              </p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Security Headers Simulator Module -->
+    @if (activeModule() === 'headers') {
+      <div class="module-container animate-in">
+        <header class="module-header">
+          <h1 class="module-title">
+            <span class="module-title-icon">📋</span>
+            Analizador de Headers de Seguridad
+          </h1>
+          <p class="module-description">Analiza headers de seguridad HTTP (simulado)</p>
+        </header>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📝 Pegar Headers HTTP</h3>
+          </div>
+          <div class="input-group">
+            <textarea 
+              class="input-field"
+              style="min-height: 150px;"
+              placeholder="Pega los headers de respuesta HTTP aquí...&#10;Ejemplo:&#10;Content-Type: application/json&#10;X-Frame-Options: DENY"
+              [ngModel]="headersInput()"
+              (ngModelChange)="headersInput.set($event)">
+            </textarea>
+          </div>
+
+          @if (headerAnalysis(); as analysis) {
+            <div class="score-circle" [class]="getHeaderScoreClass()">
+              <div class="score-value">{{ analysis.score }}</div>
+              <div class="score-label">Puntuación</div>
+            </div>
+
+            @if (analysis.present.length > 0) {
+              <div style="margin-top: 20px;">
+                <h4 style="margin-bottom: 12px; color: var(--accent-primary);">✓ Headers Presentes</h4>
+                @for (header of analysis.present; track header.name) {
+                  <div class="header-present">
+                    <span class="header-name">{{ header.name }}</span>
+                    <span class="header-value">{{ header.value }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (analysis.missing.length > 0) {
+              <div style="margin-top: 20px;">
+                <h4 style="margin-bottom: 12px; color: var(--accent-warning);">⚠️ Headers Faltantes</h4>
+                @for (header of analysis.missing; track header.name) {
+                  <div class="header-missing">
+                    <span class="header-name">{{ header.name }}</span>
+                    <span style="font-size: 11px; color: var(--text-muted); max-width: 60%;">{{ header.recommendation }}</span>
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-developer">
+          <span class="footer-icon">👨‍💻</span>
+          <div class="footer-info">
+            <div class="footer-name">Desarrollado por Isaac Esteban Haro Torres</div>
+            <div class="footer-role">Ingeniero en Sistemas · Full Stack · Automatización · Data</div>
+          </div>
+        </div>
+        <div class="footer-contact">
+          <a href="mailto:zackharo1@gmail.com" class="footer-link">📧 zackharo1@gmail.com</a>
+          <a href="https://wa.me/59398805517" class="footer-link">📱 098805517</a>
+          <a href="https://github.com/ieharo1" target="_blank" class="footer-link">💻 GitHub</a>
+          <a href="https://ieharo1.github.io/portafolio-isaac.haro/" target="_blank" class="footer-link">🌐 Portafolio</a>
+        </div>
+        <div class="footer-copyright">
+          © 2026 Isaac Esteban Haro Torres - Todos los derechos reservados.
+        </div>
+      </div>
+    </footer>
+
+  </main>
+</div>

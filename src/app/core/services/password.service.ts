@@ -129,14 +129,14 @@ export class PasswordService {
     const combinations = Math.pow(2, entropy);
     const seconds = combinations / guessesPerSecond / 2;
     
-    if (seconds < 1) return 'Instant';
-    if (seconds < 60) return `${Math.round(seconds)} seconds`;
-    if (seconds < 3600) return `${Math.round(seconds / 60)} minutes`;
-    if (seconds < 86400) return `${Math.round(seconds / 3600)} hours`;
-    if (seconds < 31536000) return `${Math.round(seconds / 86400)} days`;
-    if (seconds < 31536000 * 100) return `${Math.round(seconds / 31536000)} years`;
-    if (seconds < 31536000 * 1000000) return `${Math.round(seconds / 31536000 / 1000)} thousand years`;
-    return 'Millions of years';
+    if (seconds < 1) return 'Instantáneo';
+    if (seconds < 60) return `${Math.round(seconds)} segundos`;
+    if (seconds < 3600) return `${Math.round(seconds / 60)} minutos`;
+    if (seconds < 86400) return `${Math.round(seconds / 3600)} horas`;
+    if (seconds < 31536000) return `${Math.round(seconds / 86400)} días`;
+    if (seconds < 31536000 * 100) return `${Math.round(seconds / 31536000)} años`;
+    if (seconds < 31536000 * 1000000) return `${Math.round(seconds / 31536000 / 1000)} mil años`;
+    return 'Millones de años';
   }
 
   generatePassword(length: number, options: {
